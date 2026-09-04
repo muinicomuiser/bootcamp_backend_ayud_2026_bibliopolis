@@ -7,7 +7,7 @@ export class AppController {
 
   // Este método devuelve un texto
   @Get()
-  getHello(): string {
+  getHello(): string{
     return this.appService.getHello();
   }
 }
