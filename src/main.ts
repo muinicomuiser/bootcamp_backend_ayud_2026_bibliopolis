@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
 import { ServiceExceptionsFilter } from './exceptions/service_exceptions.filter';
 import { config } from 'dotenv'
+import { GlobalInterceptor } from './interceptor/global.interceptor';
 
 config()
 
@@ -19,6 +20,8 @@ async function bootstrap() {
     whitelist: true
   }))
   app.useGlobalFilters(new ServiceExceptionsFilter())
+
+  app.useGlobalInterceptors(new GlobalInterceptor())
 
   const config = new DocumentBuilder()
   .setTitle('API Usuarios')
