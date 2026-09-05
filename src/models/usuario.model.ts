@@ -7,9 +7,5 @@ export class Usuario {
     contrasena: string;
     direccion: string;
     genero: GeneroUsuario;
-    // edad: number
-    // last_update: Date
-    // created: Date
-    // cosas_privadas: string
 }
 
