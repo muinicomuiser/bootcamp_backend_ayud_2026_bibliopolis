@@ -3,6 +3,7 @@ import { Libro } from 'src/models/libro.model';
 import { CreateLibroDTO } from './dto/create_libro.dto';
 import { GeneroLibro } from 'src/enum/genero_libro.enum';
 import { GetLibroDTO } from './dto/get_libro.dto';
+import { ElementConflictException, ElementNotFoundException } from 'src/exceptions/database_exceptions';
 
 @Injectable()
 export class LibrosService {
@@ -12,15 +13,9 @@ export class LibrosService {
         this.initDatabase()
     }
 
-    // Crear un libro nuevo
-    crearLibro(dto: CreateLibroDTO){
-        const libroExistente = this.findByISBN(dto.isbn)
-        if(libroExistente) throw Error("El isbn ya está registrado")
-        const entidad: Libro = this.toEntity(dto)
-        this.libros.push(entidad)
-    }
-
+    // Obtener todos los libros. Filtrar por autor y género
     obtenerFiltrados(autor?: string, genero?: GeneroLibro){
+        
         let librosFiltrados: Libro[] = this.libros
         if(autor){
             librosFiltrados = librosFiltrados.filter(libro => libro.autor == autor)
@@ -31,23 +26,58 @@ export class LibrosService {
         return librosFiltrados.map(this.toDTO)
     }
 
+    // Obtener libro por ISBN
     obtenerPorISBN(isbn: string): GetLibroDTO{
+        
         const libroExistente = this.findByISBN(isbn)
-        if(!libroExistente) throw Error("No existe un libro con ese isbn")
+        if(!libroExistente) {
+            // Este error presonalizado construirá el mensaje:
+            // "Libro con identicador '<isbn>' no encontrado"
+            // Y será capturado en el filtro de excepciones
+            throw new ElementNotFoundException("Libro", isbn)
+        }
+
         return this.toDTO(libroExistente)
     }
 
+    
+    // Crear un libro nuevo
+    crearLibro(dto: CreateLibroDTO){
+
+        const libroExistente = this.findByISBN(dto.isbn)
+
+        if(libroExistente) {
+            // Este error presonalizado construirá el mensaje:
+            // "Libro con isbn '<isbn>' ya existe"          
+            // Y será capturado en el filtro de excepciones
+            throw new ElementConflictException("Libro", "isbn", dto.isbn)
+        }
+
+        const entidad: Libro = this.toEntity(dto)
+        this.libros.push(entidad)
+        return this.toDTO(entidad)
+    }
+
+
+    // Eliminar libro por isbn
     eliminiarPorISBN(isbn: string){
         
         const index = this.libros.findIndex(libro => libro.isbn == isbn)
-        if(index < 0) throw Error("No existe un libro con ese isbn")
+        if(index < 0) {
+            throw new ElementNotFoundException("Libro", isbn)
+        }
+
         this.libros.splice(index)
     }
 
 
+    // Método interno, busca un libro en la lista de libros. Retorna Libro o undefined
     private findByISBN(isbn: string){
+        
         return this.libros.find(libro => libro.isbn == isbn)
     }
+
+    // Métodos útiles para mapear objetos
 
     private toEntity(dto: CreateLibroDTO): Libro{
         const entidad: Libro = new Libro()
@@ -62,6 +92,7 @@ export class LibrosService {
         entidad.titulo = dto.titulo
         return entidad
     }
+
     private toDTO(libro: Libro): GetLibroDTO{
         const dto: GetLibroDTO = new Libro()
         dto.autor = libro.autor
@@ -76,6 +107,8 @@ export class LibrosService {
         return dto
     }
 
+
+    // Carga inicial de datos dummy (de ejemplo)
     private initDatabase(){
         const libros: Libro[] = [
             {
